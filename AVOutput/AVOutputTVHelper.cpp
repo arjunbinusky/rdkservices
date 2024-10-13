@@ -191,7 +191,7 @@ namespace Plugin {
         LOGINFO("Entry : %s pqmode : %s source :%s format :%s\n",__FUNCTION__,pqmode.c_str(),source.c_str(),format.c_str());
 
         if( source.compare("none") == 0 || source.compare("Current") == 0 ) {
-            int currentSource = VIDEO_SOURCE_IP;
+            tvVideoSrcType_t  currentSource = VIDEO_SOURCE_IP;
             GetCurrentVideoSource(&currentSource);
             sourceIndex = (int)currentSource;
         }
@@ -237,14 +237,14 @@ namespace Plugin {
     int AVOutputTV::getDolbyModeIndex(const char * dolbyMode)
     {
         int mode = 0;
-        pic_modes_t *dolbyModes     ;
+        tvDolbyMode_t *dolbyModes = NULL;
         unsigned short totalAvailable = 0;
 
-        tvError_t ret = GetTVSupportedDolbyVisionModesODM(&dolbyModes,&totalAvailable);
+        tvError_t ret = GetTVSupportedDolbyVisionModes(&dolbyModes,&totalAvailable);
         if(ret == tvERROR_NONE) {
             for(int count = 0;count <totalAvailable;count++ ) {
-                if(strncasecmp(dolbyMode, dolbyModes[count].name, strlen(dolbyMode))==0) {
-                    mode = dolbyModes[count].value;
+                if(strncasecmp(dolbyMode, GetDolbyVisionModeStringFromEnum(dolbyModes[count]), strlen(dolbyMode))==0) {
+                    mode = dolbyModes[count];
                     break;
                 }
 
@@ -253,7 +253,9 @@ namespace Plugin {
             mode = -1;
             printf("(%s):get supported mode is failed\n", __func__);
         }
-
+        if (dolbyModes != NULL) {
+            free(dolbyModes);
+        }
         return mode;
     }
 
@@ -292,7 +294,7 @@ namespace Plugin {
         bool ret=false;
         char picMode[PIC_MODE_NAME_MAX]={0};
         tvError_t retVal = tvERROR_NONE;
-        int sourceIndex = VIDEO_SOURCE_IP;
+        tvVideoSrcType_t  sourceIndex = VIDEO_SOURCE_IP;
         std::string currentPicMode;
         std::string currentSource;
         std::string currentFormat;
@@ -408,7 +410,7 @@ namespace Plugin {
         std::set<string> formatInputSet;
         std::set<string> sourceInputSet;
 
-        if( ReadCapablitiesFromConfODM( rangeCapInfo, pqmodeCapInfo, formatCapInfo, sourceCapInfo,param, isPlatformSupport, indexInfo) ) {
+        if( ReadCapablitiesFromConf( rangeCapInfo, pqmodeCapInfo, formatCapInfo, sourceCapInfo,param, isPlatformSupport, indexInfo) ) {
             LOGINFO( "%s: readCapablitiesFromConf Failed !!!\n",__FUNCTION__);
             return false;
         }
@@ -635,7 +637,7 @@ namespace Plugin {
             PQFileName = std::string(AVOUTPUT_RFC_CALLERID_OVERRIDE);
         }
         else {
-            int val=GetPanelIDODM(panelId);
+            int val=GetPanelID(panelId);
             if(val==0) {
                 LOGINFO("%s : panel id read is : %s\n",__FUNCTION__,panelId);
                 if(strncmp(panelId,AVOUTPUT_CONVERTERBOARD_PANELID,strlen(AVOUTPUT_CONVERTERBOARD_PANELID))!=0) {
@@ -662,7 +664,7 @@ namespace Plugin {
     {
         tvError_t ret = tvERROR_NONE;
         TR181_ParamData_t param;
-        int current_source = VIDEO_SOURCE_IP;
+        tvVideoSrcType_t  current_source = VIDEO_SOURCE_IP;
         std::string tr181_param_name = "";
         tvVideoFormatType_t current_format = VIDEO_FORMAT_NONE;
 
@@ -749,7 +751,7 @@ namespace Plugin {
             }
         }
         else if (source == "Current") {
-            int currentSource = VIDEO_SOURCE_IP;
+            tvVideoSrcType_t  currentSource = VIDEO_SOURCE_IP;
             tvError_t ret = GetCurrentVideoSource(&currentSource);
 
             if(ret != tvERROR_NONE) {
@@ -1276,13 +1278,13 @@ namespace Plugin {
         TR181_ParamData_t param;
         std::string rfc_param = AVOUTPUT_HDR10MODE_RFC_PARAM;
         int dolby_mode_value = 0;
-        int sourceIndex = VIDEO_SOURCE_IP;
+        tvVideoSrcType_t  sourceIndex = VIDEO_SOURCE_IP;
         /*Since dolby vision is source specific, we should for check for specific source*/
         if (!source.empty()) {
             sourceIndex = (tvVideoSrcType_t)getSourceIndex(source);
         }
         else {
-            GetCurrentSource(&sourceIndex);
+            GetCurrentVideoSource(&sourceIndex);
         }
 
         char picMode[PIC_MODE_NAME_MAX]={0};
@@ -1305,7 +1307,7 @@ namespace Plugin {
         tr181ErrorCode_t err = getLocalParam(rfc_caller_id, rfc_param.c_str(), &param);
         if ( tr181Success != err) {
             tvError_t retVal = GetDefaultPQParams(pqmodeIndex,(tvVideoSrcType_t)sourceIndex,
-                                                 (tvVideoFormatType_t)ConvertHDRFormatToContentFormatODM((tvhdr_type_t)format),
+                                                 (tvVideoFormatType_t)ConvertHDRFormatToContentFormat((tvVideoFormatType_t)format),
                                                  PQ_PARAM_DOLBY_MODE,&dolby_mode_value);
             if( retVal != tvERROR_NONE ) {
                 LOGERR("%s : failed\n",__FUNCTION__);
@@ -1335,7 +1337,7 @@ namespace Plugin {
         std::string indexInfo;
         std::vector<std::string> localIndex;
 
-        if( ReadCapablitiesFromConfODM( rangeInfo, pqmodeInfo, formatInfo ,sourceInfo,param, platformsupport, indexInfo)) {
+        if( ReadCapablitiesFromConf( rangeInfo, pqmodeInfo, formatInfo ,sourceInfo,param, platformsupport, indexInfo)) {
             LOGERR( "%s: ReadCapablitiesFromConf Failed !!!\n",__FUNCTION__);
             return tvERROR_GENERAL;
         }
@@ -1358,7 +1360,7 @@ namespace Plugin {
         std::string pqmodeInfo;
         std::string indexInfo;
 
-        if( ReadCapablitiesFromConfODM( rangeInfo, pqmodeInfo, formatInfo ,sourceInfo,param, isPlatformSupport, indexInfo)) {
+        if( ReadCapablitiesFromConf( rangeInfo, pqmodeInfo, formatInfo ,sourceInfo,param, isPlatformSupport, indexInfo)) {
             LOGERR( "%s: ReadCapablitiesFromConf Failed !!!\n",__FUNCTION__);
             return tvERROR_GENERAL;
         }
@@ -1429,6 +1431,59 @@ namespace Plugin {
         return ret;
     }
 
+    int AVOutputTV::ReadCapablitiesFromConf(std::string &rangeInfo,std::string &pqmodeInfo,std::string &formatInfo,std::string &sourceInfo,
+                           std::string param, std::string & isPlatformSupport, std::string & indexInfo)
+    {
+        int ret = 0;
+
+        try {
+            CIniFile inFile(CAPABLITY_FILE_NAME);
+            std::string configString;
+            if ((param == "DolbyVisionMode") || (param == "Backlight") ) {
+                configString = param + ".platformsupport";
+                isPlatformSupport = inFile.Get<std::string>(configString);
+                printf(" platfromsupport : %s\n",isPlatformSupport.c_str() );
+            }
+
+            if ( (param == "ColorTemperature") || (param == "DimmingMode") ||
+                ( param == "AutoBacklightControl") || (param == "DolbyVisionMode") ||
+                (param == "HDR10Mode") || (param == "HLGMode") || (param == "AspectRatio") ||
+                (param == "PictureMode") || (param == "VideoSource") || (param == "VideoFormat") ||
+                (param == "VideoFrameRate") ) {
+                configString =  param + ".range";
+                rangeInfo = inFile.Get<std::string>(configString);
+                printf(" String Range info : %s\n",rangeInfo.c_str() );
+            } else {
+                configString = param + ".range_from";
+                rangeInfo = inFile.Get<std::string>(configString);
+                configString = param + ".range_to";
+                rangeInfo += ","+inFile.Get<std::string>(configString);
+                printf(" Integer Range Info : %s\n",rangeInfo.c_str() );
+            }
+
+            if ((param == "VideoSource") || (param == "PictureMode") || (param == "VideoFormat") ) {
+                configString.clear();
+                configString = param + ".index";
+                indexInfo = inFile.Get<std::string>(configString);
+                printf("Index value %s\n", indexInfo.c_str());
+            }
+
+            configString.clear();
+            configString = param + ".pqmode";
+            pqmodeInfo = inFile.Get<std::string>(configString);
+            configString = param + ".format";
+            formatInfo = inFile.Get<std::string>(configString);
+            configString = param + ".source";
+            sourceInfo = inFile.Get<std::string>(configString);
+            ret = 0;
+        }
+        catch(const boost::property_tree::ptree_error &e) {
+            printf("%s: error %s::config table entry not found in ini file\n",__FUNCTION__,e.what());
+            ret = -1;
+        }
+        return ret;
+    }
+
     void AVOutputTV::getDimmingModeStringFromEnum(int value, std::string &toStore)
     {
         const char *color_temp_string[] = {
@@ -1457,7 +1512,7 @@ namespace Plugin {
         tvError_t  ret = tvERROR_NONE;
         TR181_ParamData_t param;
         std::string tr181_param_name;
-        int currentSource = VIDEO_SOURCE_IP;
+        tvVideoSrcType_t  currentSource = VIDEO_SOURCE_IP;
 
         ret = GetCurrentVideoSource(&currentSource);
         if(ret != tvERROR_NONE) {

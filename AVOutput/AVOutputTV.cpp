@@ -375,7 +375,7 @@ namespace Plugin {
 	} 
 	else {
             LOGINFO("Platform Init successful...\n");
-            ret = TvSyncCalibrationInfoODM();
+            ret = TvSyncCalibrationInfo();
             if(ret != tvERROR_NONE) {
                 LOGERR(" SD3 <->cri_data sync failed, ret: %s \n", getErrorString(ret).c_str());
             }
@@ -2282,9 +2282,9 @@ namespace Plugin {
     {
 
         LOGINFO("Entry\n");
-        pic_modes_t *dvModes;
+        tvDolbyMode_t *dvModes = NULL;
         unsigned short totalAvailable = 0;
-        tvError_t ret = GetTVSupportedDolbyVisionModesODM(&dvModes,&totalAvailable);
+        tvError_t ret = GetTVSupportedDolbyVisionModes(&dvModes,&totalAvailable);
         if(ret != tvERROR_NONE) {
             returnResponse(false);
         }
@@ -2292,11 +2292,14 @@ namespace Plugin {
             JsonArray SupportedDVModes;
 
             for(int count = 0;count <totalAvailable;count++ ) {
-                SupportedDVModes.Add(dvModes[count].name);
+                SupportedDVModes.Add(GetDolbyVisionModeStringFromEnum(dvModes[count]));
             }
 
             response["supportedDVModes"] = SupportedDVModes;
             LOGINFO("Exit\n");
+            if (dvModes != NULL) {
+                free(dvModes);
+            }
             returnResponse(true);
         }
 
@@ -2376,7 +2379,7 @@ namespace Plugin {
 
         if( isSetRequired("Current",source,"DV") ) {
             LOGINFO("Proceed with setDolbyVisionMode\n\n");
-            ret = SetTVDolbyVisionModeODM(value.c_str());
+            ret = SetTVDolbyVisionMode(GetDolbyVisionEnumFromModeString(value.c_str()));
         }
 
         if(ret != tvERROR_NONE) {
@@ -2437,7 +2440,7 @@ namespace Plugin {
                 if( err == 0 ) {
                     std::string dolbyModeValue = getDolbyModeStringFromEnum((tvDolbyMode_t)dolbyMode);
                     LOGINFO("%s : getLocalparam success format :%d source : %d format : %d dolbyvalue : %s\n",__FUNCTION__,formatIndex, sourceIndex, pqIndex, dolbyModeValue.c_str());
-                    ret = SetTVDolbyVisionModeODM(dolbyModeValue.c_str());
+                    ret = SetTVDolbyVisionMode(GetDolbyVisionEnumFromModeString(dolbyModeValue.c_str()));
                 }
                 else {
                     LOGERR("%s : GetLocalParam Failed \n",__FUNCTION__);

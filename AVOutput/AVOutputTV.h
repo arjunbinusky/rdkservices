@@ -232,6 +232,8 @@ class AVOutputTV : public AVOutputBase {
 				std::vector<std::string> & index);
 		int GetPanelID(char *panelid);
 		int ConvertHDRFormatToContentFormat(tvVideoFormatType_t hdrFormat);
+		int ReadCapablitiesFromConf(std::string &rangeInfo,std::string &pqmodeInfo,std::string &formatInfo,std::string &sourceInfo,
+				                           std::string param, std::string & isPlatformSupport, std::string & indexInfo);
 		void getDimmingModeStringFromEnum(int value, std::string &toStore);
 		void getColorTempStringFromEnum(int value, std::string &toStore);
 		int getCurrentPictureMode(char *picMode);
