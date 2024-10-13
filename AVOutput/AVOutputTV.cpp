@@ -2719,11 +2719,9 @@ namespace Plugin {
             returnResponse(false);
         }
 
-        std::string local = value;
-        transform(local.begin(), local.end(), local.begin(), ::tolower);
         if( isSetRequired("Current",source,format) ) {
             LOGINFO("Proceed with SetTVPictureMode\n");
-            ret = SetTVPictureMode(local.c_str());
+            ret = SetTVPictureMode(value.c_str());
          }
         if(ret != tvERROR_NONE) {
             returnResponse(false);
@@ -2835,13 +2833,9 @@ namespace Plugin {
                             current_format = VIDEO_FORMAT_SDR;
                         }
 
-                        //as hal using lower across converting to lower
-                        std::string setparam = param.value;
-                        transform(setparam.begin(), setparam.end(), setparam.begin(), ::tolower);
-
                         if (current_source == sourceType && current_format == formatType) {
 
-                            tvError_t ret = SetTVPictureMode(setparam.c_str());
+                            tvError_t ret = SetTVPictureMode(param.value);
                             if(ret != tvERROR_NONE) {
                                 LOGWARN("Picture Mode set failed: %s\n",getErrorString(ret).c_str());
                                 returnResponse(false);

@@ -53,7 +53,7 @@
 
 #define API_VERSION_NUMBER_MAJOR 1
 #define API_VERSION_NUMBER_MINOR 6
-#define API_VERSION_NUMBER_PATCH 3
+#define API_VERSION_NUMBER_PATCH 4
 
 const string WPEFramework::Plugin::RDKShell::SERVICE_NAME = "org.rdk.RDKShell";
 //methods
@@ -947,9 +947,7 @@ namespace WPEFramework {
                 }
 		else if (requestName.compare("susbscribeSystemEvent") == 0)
                 {
-                   gSubscribeMutex.lock();
 		   subscribeForSystemEvent("onSystemPowerStateChanged");
-		   gSubscribeMutex.unlock();
                    std::cout << "subscribed system event " << std::endl;
                    JsonObject joGetParams;
                     JsonObject joGetResult;
@@ -1931,24 +1929,7 @@ namespace WPEFramework {
             {
                 waitForPersistentStore = false;
             }
-	    if(!factoryMacMatched){
-                   int32_t status = 0;
-                   std::string callsign("ResidentApp");
-                   JsonObject activateParams,response;
-                   activateParams.Set("callsign",callsign.c_str());
-                   JsonObject activateResult;
-                   auto thunderController = getThunderControllerClient();
-                   status = thunderController->Invoke<JsonObject, JsonObject>(RDKSHELL_THUNDER_TIMEOUT, "activate", activateParams, activateResult);
-                   std::cout << "Activating ResidentApp from RDKShell during bootup with Status:" << status << std::endl;
-                   if (status > 0){
-                           response["message"] = "resident app launch failed";
-                           std::cout << "resident app launch failed from rdkshell" << std::endl;
-                   }
-                  else {
-                        response["message"] = "resident app launch success";
-                        std::cout << "resident app launch success from rdkshell" << std::endl;
-                  }
-            }
+
             char* blockResidentApp = getenv("RDKSHELL_BLOCK_RESIDENTAPP_FACTORYMODE");
             if (NULL != blockResidentApp)
             {
@@ -1998,7 +1979,17 @@ namespace WPEFramework {
                         }
                         else
                         {
-                          std::cout << "not launching factory app as conditions not matched\n";
+                            std::cout << "Launch RA not waiting for persistent store\n";
+                            gRdkShellMutex.unlock();
+                            int32_t status = 0;
+                            std::string callsign("ResidentApp");
+                            JsonObject activateParams;
+                            activateParams.Set("callsign",callsign.c_str());
+                            JsonObject activateResult;
+                            auto thunderController = getThunderControllerClient();
+                            status = thunderController->Invoke<JsonObject, JsonObject>(RDKSHELL_THUNDER_TIMEOUT, "activate", activateParams, activateResult);
+                            gRdkShellMutex.lock();
+                            std::cout << "Bootup Activating ResidentApp from RDKShell without Persistentstore wait with Status:" << status << std::endl;
                         }
                     }
                 }
@@ -2060,7 +2051,17 @@ namespace WPEFramework {
                     }
                     else
                     {
-                        std::cout << "Not launching factory app as conditions not matched\n";
+                        std::cout << "Launch RA after waiting for persistent store\n";
+                        gRdkShellMutex.unlock();
+                        int32_t status = 0;
+                        std::string callsign("ResidentApp");
+                        JsonObject activateParams;
+                        activateParams.Set("callsign",callsign.c_str());
+                        JsonObject activateResult;
+                        auto thunderController = getThunderControllerClient();
+                        status = thunderController->Invoke<JsonObject, JsonObject>(RDKSHELL_THUNDER_TIMEOUT, "activate", activateParams, activateResult);
+                        gRdkShellMutex.lock();
+                        std::cout << "Bootup Activating ResidentApp from RDKShell after Persistentstore wait with Status:" << status << std::endl;
                     }
                   }
                   while (gCreateDisplayRequests.size() > 0)
@@ -8164,6 +8165,7 @@ namespace WPEFramework {
 
         int32_t RDKShell::subscribeForSystemEvent(std::string event)
         {
+	    gSubscribeMutex.lock();
             int32_t status = Core::ERROR_GENERAL;
 
             PluginHost::IShell::state state;
@@ -8203,7 +8205,7 @@ namespace WPEFramework {
             }
             else
                 std::cout << "No Connection to SystemServices" << std::endl;
-
+	    gSubscribeMutex.unlock();
             return status;
         }
         

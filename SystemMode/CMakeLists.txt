@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(PLUGIN_NAME UserSettings)
+set(PLUGIN_NAME SystemMode)
 set(MODULE_NAME ${NAMESPACE}${PLUGIN_NAME})
 set(PLUGIN_IMPLEMENTATION ${MODULE_NAME}Implementation)
 
-set(PLUGIN_USERSETTINGS_AUTOSTART "true" CACHE STRING "Automatically start UserSettings plugin")
-set(PLUGIN_USERSETTINGS_STARTUPORDER "51" CACHE STRING "To configure startup order of UserSettings plugin")
+set(PLUGIN_SYSTEMMODE_AUTOSTART "false" CACHE STRING "Automatically start SystemMode plugin")
+set(PLUGIN_SYSTEMMODE_STARTUPORDER "41" CACHE STRING "To configure startup order of SystemMode plugin")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -29,7 +29,7 @@ find_package(${NAMESPACE}Definitions REQUIRED)
 find_package(CompileSettingsDebug CONFIG REQUIRED)
 
 add_library(${MODULE_NAME} SHARED
-    UserSettings.cpp
+    SystemMode.cpp
     Module.cpp)
 
 set_target_properties(${MODULE_NAME} PROPERTIES
@@ -46,7 +46,7 @@ install(TARGETS ${MODULE_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
 
 add_library(${PLUGIN_IMPLEMENTATION} SHARED
-    UserSettingsImplementation.cpp
+    SystemModeImplementation.cpp
     Module.cpp)
 
 include_directories(
@@ -69,7 +69,8 @@ endif (RDK_SERVICES_L2_TEST)
 target_link_libraries(${PLUGIN_IMPLEMENTATION}
     PRIVATE
         CompileSettingsDebug::CompileSettingsDebug
-        ${NAMESPACE}Plugins::${NAMESPACE}Plugins)
+        ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+         )
 
 install(TARGETS ${PLUGIN_IMPLEMENTATION}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/${STORAGE_DIRECTORY}/plugins)
